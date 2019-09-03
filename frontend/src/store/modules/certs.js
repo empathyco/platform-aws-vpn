@@ -1,5 +1,4 @@
 
-import moment from 'moment'
 import api from '../../api'
 
 import { downloadFile } from '../../utils/download'
@@ -21,12 +20,12 @@ const actions = {
       // TODO: error handling
       const r = await api.getCerts(showAllUsers)
       r.data.certs = r.data.certs.map(c => {
-        c.notBefore = moment(c.notBefore)
-        c.notAfter = moment(c.notAfter)
+        c.notBefore = new Date(c.notBefore)
+        c.notAfter = new Date(c.notAfter)
 
         c.isRevoked = c.revoked !== undefined
         if (c.isRevoked) {
-          c.revoked = moment(c.revoked)
+          c.revoked = new Date(c.revoked)
         }
         return c
       })

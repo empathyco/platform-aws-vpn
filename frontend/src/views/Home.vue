@@ -1,5 +1,10 @@
 <template>
-  <div class="home">
+  <v-layout
+    :justify-center="!signedIn"
+    :justify-start="signedIn"
+    align-center
+    column
+  >
     <v-alert
       :type="alertType"
       :value="alertVisible"
@@ -7,35 +12,28 @@
     >
       {{ alertMessage }}
     </v-alert>
-    <v-card v-if="!signedIn">
-      <v-card-text class="title pa-5">
-        <p
-          v-if="!ready"
-          class="text-xs-center"
-        >
-          <v-progress-circular
-            indeterminate
-            color="primary"
-            :size="20"
-          /> Loading...
-        </p>
-        <div
-          v-else-if="!signedIn"
-          class="text-xs-center"
-        >
-          <v-btn
-            color="primary"
-            @click="signIn"
-          >
-            <v-icon left>
-              security
-            </v-icon> Sign In
-          </v-btn>
-        </div>
-      </v-card-text>
-    </v-card>
+    <v-btn
+      v-if="!signedIn"
+      :disabled="!ready"
+      color="primary"
+      @click="signIn"
+    >
+      <v-icon
+        v-if="ready"
+        left
+      >
+        $vuetify.icon.signIn
+      </v-icon>
+      <v-progress-circular
+        v-else
+        color="primary"
+        indeterminate
+        :size="20"
+      />
+      <span>Sign In</span>
+    </v-btn>
     <CertificateList v-else />
-  </div>
+  </v-layout>
 </template>
 
 <script>

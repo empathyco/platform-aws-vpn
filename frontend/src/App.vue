@@ -1,15 +1,17 @@
 <template>
   <v-app>
-    <v-toolbar app>
+    <v-app-bar app>
       <v-spacer />
       <v-toolbar-title>{{ appName }}</v-toolbar-title>
       <v-spacer />
-      <v-toolbar-items>
-        <GoogleLogin />
-      </v-toolbar-items>
-    </v-toolbar>
+      <GoogleLogin />
+    </v-app-bar>
     <v-content>
-      <v-container fixed>
+      <v-container
+        align-content-center
+        fill-height
+        fluid
+      >
         <router-view />
       </v-container>
     </v-content>
@@ -30,12 +32,3 @@ export default {
   }
 }
 </script>
-
-<style>
-  body {
-    height: 100%;
-  }
-  .card--flex-toolbar {
-    margin-top: -65px;
-  }
-</style>
