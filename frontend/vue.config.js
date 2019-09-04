@@ -1,10 +1,10 @@
 
-const MomentLocalesPlugin = require('moment-locales-webpack-plugin')
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 module.exports = {
   configureWebpack: {
     plugins: [
-      new MomentLocalesPlugin()
+      new BundleAnalyzerPlugin({ analyzerMode: 'static', openAnalyzer: false })
     ]
   },
   devServer: {
