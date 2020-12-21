@@ -1,0 +1,129 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@0.1.13
+
+executors:
+  golang:
+    docker:
+      - image: circleci/golang:1.12
+    environment:
+      - GOOS: linux
+      - GOARCH: amd64
+  nodejs:
+    docker:
+      - image: circleci/node:10
+
+commands:
+
+
+jobs:
+  build-golang:
+    executor: golang
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-{{ checksum "go.sum" }}
+      - run: go mod download
+      - save_cache:
+          key: go-{{ checksum "go.sum" }}
+          paths:
+            - /go/pkg/mod
+
+      - run:
+          command: |
+            mkdir -p ./artifacts
+            BUILDDIR=$(mktemp -d)
+            trap "rm -r ${BUILDDIR}" EXIT
+
+            for CMD in ./cmd/*; do
+              [ -e "${CMD}/main.go" ] || continue
+              CMD_BASE=$(basename ${CMD})
+              BINARY_NAME=${CMD_BASE/#lambda-/vpn-}
+
+              go build -ldflags="-w -s" -o ${BUILDDIR}/${BINARY_NAME} ${CMD}
+              zip -j ./artifacts/${BINARY_NAME}.zip ${BUILDDIR}/${BINARY_NAME}
+            done
+
+      - persist_to_workspace:
+          root: ./artifacts
+          paths:
+            - ./*.zip
+      - store_artifacts:
+          path: ./artifacts
+
+  build-frontend:
+    executor: nodejs
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - node-{{ checksum "frontend/package.json" }}
+      - run: npm --prefix ./frontend install
+      - save_cache:
+          key: node-{{ checksum "frontend/package.json" }}
+          paths:
+            - frontend/node_modules
+
+      - run:
+          name: "Build Frontend Application"
+          command: |
+            npm --prefix ./frontend run build
+            mkdir -p ./artifacts
+            tar -czvf ./artifacts/frontend.tar.gz -C ./frontend/dist .
+
+      - persist_to_workspace:
+          root: ./artifacts
+          paths:
+            - frontend.tar.gz
+      - store_artifacts:
+          path: ./artifacts
+
+  deploy:
+    executor: aws-cli/default
+    steps:
+      - aws-cli/install
+      - aws-cli/configure
+      - run: aws sts get-caller-identity
+
+      - attach_workspace:
+          at: ./artifacts
+      - run: ls -lah ./artifacts
+
+
+  publish-github-release:
+    docker:
+      - image: cibuilds/github:0.12
+    steps:
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            ghr -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${CIRCLE_TAG} ./artifacts/
+
+
+workflows:
+  version: 2.1
+
+  build:
+    jobs:
+      - build-golang:
+          filters:
+            tags:
+              only: /.*/
+      - build-frontend:
+          filters:
+            tags:
+              only: /.*/
+      - publish-github-release:
+          context: gh-releases
+          requires:
+            - build-golang
+            - build-frontend
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+$/
