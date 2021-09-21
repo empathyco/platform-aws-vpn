@@ -10,6 +10,7 @@ remote {{ env "PKI_DOMAIN" }}
 remote-random-hostname
 push-peer-info
 explicit-exit-notify
+route 172.16.0.0 255.240.0.0
 
 remote-cert-tls server
 tls-version-min 1.3 or-highest
